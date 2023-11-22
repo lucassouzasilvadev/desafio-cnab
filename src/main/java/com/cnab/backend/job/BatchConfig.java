@@ -1,9 +1,14 @@
-package com.cnab.backend;
+package com.cnab.backend.job;
 
+import com.cnab.backend.domain.Transacao;
+import com.cnab.backend.domain.TransacaoCNAB;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
@@ -12,17 +17,18 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.file.FlatFileItemReader;
-import org.springframework.batch.item.file.FlatFileParseException;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.transform.Range;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;
-import java.sql.SQLOutput;
 
 @Configuration
 public class BatchConfig {
@@ -51,11 +57,12 @@ public class BatchConfig {
                 .build();
     }
 
+    @StepScope
     @Bean
-    FlatFileItemReader<TransacaoCNAB> reader(){
+    FlatFileItemReader<TransacaoCNAB> reader(@Value("#{jobParameters['cnabFile']}") Resource resource){
         return new FlatFileItemReaderBuilder<TransacaoCNAB>()
                 .name("reader")
-                .resource(new FileSystemResource("file\\CNAB.txt"))
+                .resource(resource)
                 .fixedLength()
                 .columns(
                     new Range(1, 1), new Range(2, 9),
@@ -96,6 +103,15 @@ public class BatchConfig {
                         )
                         """)
                 .beanMapped().build();
+    }
+    
+    @Bean
+    JobLauncher jobLauncherAsync(JobRepository jobRepository) throws Exception{
+        var jobLauncher = new TaskExecutorJobLauncher();
+        jobLauncher.setJobRepository(jobRepository);
+        jobLauncher.setTaskExecutor(new SimpleAsyncTaskExecutor());
+        jobLauncher.afterPropertiesSet();
+        return jobLauncher;
     }
 }
 

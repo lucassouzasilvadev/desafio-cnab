@@ -1,4 +1,4 @@
-package com.cnab.backend;
+package com.cnab.backend.domain;
 
 import java.math.BigDecimal;
 
