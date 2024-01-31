@@ -1,7 +1,8 @@
 package com.cnab.backend.job;
 
-import com.cnab.backend.domain.Transacao;
-import com.cnab.backend.domain.TransacaoCNAB;
+import com.cnab.backend.entity.TipoTransacao;
+import com.cnab.backend.entity.Transacao;
+import com.cnab.backend.entity.TransacaoCNAB;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -22,7 +23,6 @@ import org.springframework.batch.item.file.transform.Range;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -81,7 +81,10 @@ public class BatchConfig {
     @Bean
     ItemProcessor<TransacaoCNAB, Transacao> processor(){
         return item -> {
-          return new Transacao(null, item.tipo(), null, item.valor().divide(BigDecimal.valueOf(100)),
+            var tipoTransacao = TipoTransacao.findByTipo(item.tipo());
+            var valorNormalizado = item.valor().divide(new BigDecimal(100)).multiply(tipoTransacao.getSinal());
+
+            return new Transacao(null, item.tipo(), null, valorNormalizado,
                                             item.cpf(), item.cartao(),null,
                                             item.donoDaLoja().trim(), item.nomeDaLoja().trim()
                   )

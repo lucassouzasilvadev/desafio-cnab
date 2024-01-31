@@ -1,6 +1,6 @@
 package com.cnab.backend.web;
 
-import com.cnab.backend.domain.CnabService;
+import com.cnab.backend.service.CnabService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
